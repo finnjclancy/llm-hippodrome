@@ -56,7 +56,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
     company: 'Meta',
     models: [
       { id: 'meta-llama/llama-3.2-1b-instruct', name: 'Llama 3.2 1B', provider: 'openrouter', company: 'Meta', selected: true },
-      { id: 'meta-llama/llama-3.2-3b-instruct', name: 'Llama 3.2 3B', provider: 'openrouter', company: 'Meta', selected: true },
+      { id: 'meta-llama/llama-3.2-3b-instruct', name: 'Llama 3.2 3B', provider: 'openrouter', company: 'Meta', selected: false },
       { id: 'meta-llama/llama-3-8b-instruct', name: 'Llama 3 8B', provider: 'openrouter', company: 'Meta', selected: false },
       { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', provider: 'openrouter', company: 'Meta', selected: false },
       { id: 'meta-llama/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', provider: 'openrouter', company: 'Meta', selected: false },
@@ -66,7 +66,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'Mistral',
     models: [
-      { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B', provider: 'openrouter', company: 'Mistral', selected: true },
+      { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B', provider: 'openrouter', company: 'Mistral', selected: false },
       { id: 'mistralai/mistral-small-3.1-24b-instruct', name: 'Mistral Small 3.1 24B', provider: 'openrouter', company: 'Mistral', selected: false },
       { id: 'mistralai/mistral-small-24b-instruct-2501', name: 'Mistral Small 24B', provider: 'openrouter', company: 'Mistral', selected: false },
       { id: 'mistralai/mistral-nemo', name: 'Mistral Nemo', provider: 'openrouter', company: 'Mistral', selected: false },
@@ -88,7 +88,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'Qwen',
     models: [
-      { id: 'qwen/qwen-2-7b-instruct', name: 'Qwen 2 7B', provider: 'openrouter', company: 'Qwen', selected: true },
+      { id: 'qwen/qwen-2-7b-instruct', name: 'Qwen 2 7B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwen2.5-vl-3b-instruct', name: 'Qwen 2.5 VL 3B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwen-2.5-vl-7b-instruct', name: 'Qwen 2.5 VL 7B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwq-32b', name: 'QWQ 32B', provider: 'openrouter', company: 'Qwen', selected: false },
@@ -108,7 +108,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'Microsoft',
     models: [
-      { id: 'microsoft/phi-3-mini-128k-instruct', name: 'Phi-3 Mini 128K', provider: 'openrouter', company: 'Microsoft', selected: true },
+      { id: 'microsoft/phi-3-mini-128k-instruct', name: 'Phi-3 Mini 128K', provider: 'openrouter', company: 'Microsoft', selected: false },
       { id: 'microsoft/phi-3-medium-128k-instruct', name: 'Phi-3 Medium 128K', provider: 'openrouter', company: 'Microsoft', selected: false },
     ]
   },
@@ -134,7 +134,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'Open-R1',
     models: [
-      { id: 'open-r1/olympiccoder-7b', name: 'OlympicCoder 7B', provider: 'openrouter', company: 'Open-R1', selected: true },
+      { id: 'open-r1/olympiccoder-7b', name: 'OlympicCoder 7B', provider: 'openrouter', company: 'Open-R1', selected: false },
       { id: 'open-r1/olympiccoder-32b', name: 'OlympicCoder 32B', provider: 'openrouter', company: 'Open-R1', selected: false },
     ]
   },
@@ -171,7 +171,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'OpenChat',
     models: [
-      { id: 'openchat/openchat-7b', name: 'OpenChat 7B', provider: 'openrouter', company: 'OpenChat', selected: true },
+      { id: 'openchat/openchat-7b', name: 'OpenChat 7B', provider: 'openrouter', company: 'OpenChat', selected: false },
     ]
   },
   {
@@ -183,7 +183,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'HuggingFace',
     models: [
-      { id: 'huggingfaceh4/zephyr-7b-beta', name: 'Zephyr 7B Beta', provider: 'openrouter', company: 'HuggingFace', selected: true },
+      { id: 'huggingfaceh4/zephyr-7b-beta', name: 'Zephyr 7B Beta', provider: 'openrouter', company: 'HuggingFace', selected: false },
     ]
   },
   {

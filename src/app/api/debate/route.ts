@@ -25,11 +25,24 @@ const formatModelName = (id: string) => {
 export async function POST(req: Request) {
   try {
     const { prompt, models } = await req.json()
+    
+    // Get the API key from request headers or fallback to env variable
+    const apiKey = req.headers.get('x-openrouter-key') || process.env.OPENROUTER_API_KEY
+    
     console.log('Received debate request:', { prompt, models })
+    console.log('Using API key:', apiKey ? 'API key present' : 'No API key provided')
     
     if (!prompt || !models || !Array.isArray(models) || models.length < 2) {
       console.error('Invalid request:', { prompt, models })
       return new Response(JSON.stringify({ error: 'Invalid request' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+    
+    if (!apiKey) {
+      console.error('No API key provided')
+      return new Response(JSON.stringify({ error: 'OpenRouter API key is required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       })
@@ -85,7 +98,7 @@ This is a friendly conversation, not a formal debate. Share your valuable insigh
               })
               
               console.log(`Getting response from ${model.id}`)
-              const response = await getModelResponse(initialPrompt, model.id)
+              const response = await getModelResponse(initialPrompt, model.id, apiKey)
               console.log(`Received response from ${model.id}`)
               
               // Finalize the response
@@ -194,7 +207,7 @@ Let's try to reach a consensus in this round! Focus on agreement and synthesis.
 `;
                 }
                 
-                const response = await getModelResponse(debatePrompt, model.id)
+                const response = await getModelResponse(debatePrompt, model.id, apiKey)
                 const displayName = formatModelName(model.id)
                 roundResponses[displayName] = response
                 
@@ -227,7 +240,7 @@ Let's try to reach a consensus in this round! Focus on agreement and synthesis.
               console.log(`Checking consensus after round ${round}, responses:`, 
                 allResponses.map(r => r.substring(0, 30) + "..."))
               
-              const consensusCheck = await checkForConsensus(prompt, allResponses, models, debates)
+              const consensusCheck = await checkForConsensus(prompt, allResponses, models, debates, apiKey)
               
               // Log the consensus check results
               console.log("Consensus check result:", {
@@ -250,18 +263,36 @@ Let's try to reach a consensus in this round! Focus on agreement and synthesis.
                   debates,
                   finalAnswer,
                   consensusReached: true,
+                  isFinalUpdate: true,
                   totalSelectedModels: models.length
                 })
+                
+                // Exit the debate loop
+                break
               }
             } catch (error) {
-              console.error(`Error checking consensus in round ${round}:`, error)
+              console.error(`Error checking consensus after round ${round}:`, error)
+            }
+            
+            // Get consensus after max rounds or if we already have a final answer
+            if (round === MAX_ROUNDS - 1 || finalAnswer) {
+              // We've reached the max rounds, so force consensus and break the loop
+              consensusReached = true
+              
+              // Send a status update
+              await sendUpdate({ 
+                initialResponses,
+                streamingResponses,
+                debates,
+                totalSelectedModels: models.length
+              })
             }
           }
           
           // Force consensus if not reached naturally
           if (!consensusReached) {
             console.log("Forcing consensus after maximum rounds")
-            const forcedConsensus = await forceConsensus(prompt, initialResponses, debates, models)
+            const forcedConsensus = await forceConsensus(prompt, initialResponses, debates, models, apiKey)
             await sendUpdate({ 
               initialResponses,
               streamingResponses,
@@ -284,24 +315,25 @@ Let's try to reach a consensus in this round! Focus on agreement and synthesis.
         }
       }
     })
-
+    
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/json',
         'Connection': 'keep-alive',
-      },
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'
+      }
     })
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ error: 'An error occurred' }), {
+    console.error('Error in debate endpoint:', error)
+    return new Response(JSON.stringify({ error: 'Server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     })
   }
 }
 
-async function getModelResponse(prompt: string, modelId: string): Promise<string> {
+async function getModelResponse(prompt: string, modelId: string, apiKey: string): Promise<string> {
   try {
     // Add ":free" suffix to model ID if it doesn't already have it
     const formattedModelId = modelId.endsWith(':free') ? modelId : `${modelId}:free`;
@@ -321,7 +353,7 @@ async function getModelResponse(prompt: string, modelId: string): Promise<string
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': 'https://llm-hippodrome.vercel.app',
           'X-Title': 'LLM Hippodrome',
         },
@@ -353,7 +385,7 @@ async function getModelResponse(prompt: string, modelId: string): Promise<string
             console.log(`Retrying with alternative model ID: ${altModelId}`);
             
             // Try the request again with the alternative ID
-            return await getModelResponse(prompt, altModelId + '__retry');
+            return await getModelResponse(prompt, altModelId + '__retry', apiKey);
           } catch (retryError) {
             console.error(`Retry with alternative model ID also failed for ${modelId}`);
             return `Error: Model ${modelId} is not available on OpenRouter's free tier`;
@@ -371,7 +403,8 @@ async function forceConsensus(
   originalPrompt: string,
   initialResponses: Record<string, string>,
   debates: Array<Record<string, string>>,
-  models: { id: string }[]
+  models: { id: string }[],
+  apiKey: string
 ): Promise<string> {
   try {
     // Build a consensus prompt from all previous interactions
@@ -431,7 +464,7 @@ Format your response as a single consensus statement without mentioning who said
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': 'https://llm-hippodrome.vercel.app',
           'X-Title': 'LLM Hippodrome',
         },
@@ -458,7 +491,8 @@ async function checkForConsensus(
   originalPrompt: string, 
   debateResponses: string[],
   models: { id: string }[],
-  debates: Array<Record<string, string>>
+  debates: Array<Record<string, string>>,
+  apiKey: string
 ): Promise<{ consensusReached: boolean; finalAnswer: string | null }> {
   try {
     // If we have 3 or more models, we need to choose a model to check consensus
@@ -513,7 +547,7 @@ Final consensus: [only if consensus is reached, summarize the agreed points]
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': 'https://llm-hippodrome.vercel.app',
           'X-Title': 'LLM Hippodrome',
         },
@@ -570,7 +604,7 @@ Create a concise, clear consensus statement that represents what all participant
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Authorization': `Bearer ${apiKey}`,
             'HTTP-Referer': 'https://llm-hippodrome.vercel.app',
             'X-Title': 'LLM Hippodrome',
           },
@@ -599,4 +633,4 @@ Create a concise, clear consensus statement that represents what all participant
       finalAnswer: null,
     };
   }
-} 
+}

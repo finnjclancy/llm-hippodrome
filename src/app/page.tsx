@@ -5,6 +5,8 @@ import { ModelSelector } from '@/components/ModelSelector'
 import { DebateArea } from '@/components/DebateArea'
 import { PromptInput } from '@/components/PromptInput'
 import { Model, MODEL_GROUPS } from '@/types/models'
+import WelcomePopup from '@/components/WelcomePopup'
+import ApiKeyInput from '@/components/ApiKeyInput'
 
 export default function Home() {
   const [prompt, setPrompt] = useState('')
@@ -13,6 +15,8 @@ export default function Home() {
   const [debates, setDebates] = useState<Array<Record<string, string>>>([])
   const [finalAnswer, setFinalAnswer] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false)
+  const [openRouterKey, setOpenRouterKey] = useState('')
   
   // Track response progress
   const [responseProgress, setResponseProgress] = useState({
@@ -33,6 +37,16 @@ export default function Home() {
 
   // Add streamingResponses state
   const [streamingResponses, setStreamingResponses] = useState<Record<string, string> | null>(null)
+
+  // Check if the welcome popup should be shown
+  useEffect(() => {
+    // Always show the popup on every page load
+    setShowWelcomePopup(true)
+  }, [])
+  
+  const closeWelcomePopup = () => {
+    setShowWelcomePopup(false)
+  }
 
   // Update the response progress whenever initialResponses changes
   useEffect(() => {
@@ -68,6 +82,11 @@ export default function Home() {
     }
   }, [finalAnswer]);
 
+  // Handle API key save
+  const handleApiKeySave = (key: string) => {
+    setOpenRouterKey(key)
+  }
+
   const toggleModel = (modelId: string) => {
     setModels(prevModels => 
       prevModels.map(model => 
@@ -87,6 +106,11 @@ export default function Home() {
   const startDebate = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt')
+      return
+    }
+    
+    if (!openRouterKey.trim()) {
+      setError('Please enter your OpenRouter API key')
       return
     }
     
@@ -123,6 +147,7 @@ export default function Home() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-OpenRouter-Key': openRouterKey // Pass the API key in header
         },
         body: JSON.stringify({
           prompt,
@@ -294,10 +319,15 @@ export default function Home() {
 
   return (
     <div className="space-y-8 py-6">
-      <h1 className="text-3xl font-bold text-center mb-2">LLM Hippodrome</h1>
+      {showWelcomePopup && <WelcomePopup onClose={closeWelcomePopup} />}
+      
+      <h1 className="text-5xl font-bold text-center mb-3">LLM Hippodrome</h1>
       <p className="text-center text-gray-600 mb-6">
         Watch AI models debate and come to a shared conclusion
       </p>
+      
+      {/* API Key Input */}
+      <ApiKeyInput onSave={handleApiKeySave} />
       
       <ModelSelector models={models} toggleModel={toggleModel} />
       
@@ -312,8 +342,8 @@ export default function Home() {
         {/* Display consensus answer as a separate component */}
         {finalAnswer && <ConsensusDisplay finalAnswer={finalAnswer} />}
         
-        {/* Status info - only show when no consensus yet */}
-        {!finalAnswer && (
+        {/* Status info - only show when a debate has been started but no consensus yet */}
+        {!finalAnswer && (initialResponses || isLoading) && (
           <div className="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
             <p>
               <strong>Status:</strong> {isLoading ? 'Debate in progress' : 'Ready'} | 

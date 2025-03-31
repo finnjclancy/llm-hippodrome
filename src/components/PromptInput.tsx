@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 
 interface PromptInputProps {
   prompt: string
@@ -13,6 +13,19 @@ export const PromptInput: React.FC<PromptInputProps> = ({
   onSubmit,
   isLoading,
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-resize the textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    // Set the height to the scrollHeight
+    textarea.style.height = `${Math.max(60, textarea.scrollHeight)}px`;
+  }, [prompt]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit()
@@ -25,11 +38,13 @@ export const PromptInput: React.FC<PromptInputProps> = ({
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <textarea
-            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:shadow-outline min-h-[120px]"
+            ref={textareaRef}
+            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:shadow-outline min-h-[60px] overflow-hidden"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Enter a topic or question for the AI models to debate..."
+            placeholder="What is the nature of consciousness?"
             disabled={isLoading}
+            rows={2}
           />
         </div>
         
