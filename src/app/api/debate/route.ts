@@ -20,132 +20,49 @@ const formatModelName = (id: string, provider: string) => {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { prompt, models } = await request.json()
+    const { prompt, models } = await req.json()
+    console.log('Received debate request:', { prompt, models })
     
     if (!prompt || !models || !Array.isArray(models) || models.length < 2) {
-      return NextResponse.json(
-        { error: 'Invalid request. Please provide a prompt and at least 2 models.' },
-        { status: 400 }
-      )
+      console.error('Invalid request:', { prompt, models })
+      return new Response(JSON.stringify({ error: 'Invalid request' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
-    
+
     // Create a streaming response
-    const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
-        // Initial state
+        const encoder = new TextEncoder()
+        
+        // Function to send updates to the client
+        const sendUpdate = async (data: any) => {
+          try {
+            controller.enqueue(encoder.encode(JSON.stringify(data) + '\n'))
+          } catch (error) {
+            console.error('Error sending update:', error)
+          }
+        }
+
+        // Initialize response tracking
         const initialResponses: Record<string, string> = {}
-        const streamingResponses: Record<string, string> = {} // Track responses being streamed
-        const activeResponseIds: Record<string, string> = {} // Map model identifiers to response IDs
+        const streamingResponses: Record<string, string> = {}
         const debates: Array<Record<string, string>> = []
         let consensusReached = false
         let finalAnswer: string | null = null
-        
-        // Enhanced sendUpdate function for more reliable data transmission
-        const sendUpdate = () => {
-          try {
-            // Debug log for client updates
-            console.log("Sending update to client:", {
-              initialResponsesCount: Object.keys(initialResponses).length,
-              streamingCount: Object.keys(streamingResponses).length,
-              debatesCount: debates.length,
-              consensusReached,
-              hasFinalAnswer: !!finalAnswer
-            });
-            
-            const data = JSON.stringify({
-              initialResponses,
-              streamingResponses, // Include streaming responses
-              debates,
-              finalAnswer,
-              consensusReached,
-            })
-            controller.enqueue(encoder.encode(data))
-          } catch (error) {
-            console.error("Error in sendUpdate:", error);
-          }
-        }
-        
-        // Function to ensure final consensus data is sent reliably
-        const sendFinalConsensus = async () => {
-          if (!finalAnswer) {
-            console.warn("Attempted to send final consensus but finalAnswer is null");
-            return;
-          }
+
+        try {
+          console.log('Starting debate processing with models:', models.map(m => m.id))
           
-          // Send final update with specific flag
-          try {
-            console.log("Sending FINAL CONSENSUS update:", finalAnswer.substring(0, 50) + "...");
-            
-            const finalData = JSON.stringify({
-              initialResponses,
-              streamingResponses,
-              debates,
-              finalAnswer,
-              consensusReached: true,
-              isFinalUpdate: true, // Extra flag to signal this is the final update
-            });
-            
-            controller.enqueue(encoder.encode(finalData));
-            
-            // Short delay to ensure client receives it
-            await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (error) {
-            console.error("Error sending final consensus:", error);
-          }
-        }
-        
-        // Inner implementation of streaming updates function
-        // This is called from the getModelResponse function
-        const handleStreamingUpdate = (responseId: string, modelId: string, provider: string, currentText: string) => {
-          try {
-            const displayName = formatModelName(modelId, provider);
-            
-            // Determine which phase we're in (initial responses or debate round)
-            if (!initialResponses[displayName] && debates.length === 0) {
-              // If in initial response phase
-              streamingResponses[displayName] = currentText;
-              activeResponseIds[displayName] = responseId;
-            } else if (debates.length > 0) {
-              // If in debate phase, update the current round
-              const currentRound = debates[debates.length - 1];
-              if (activeResponseIds[displayName] === responseId) {
-                currentRound[displayName] = currentText;
-              }
-            }
-            
-            // Send the update to the client
-            sendUpdate();
-          } catch (error) {
-            console.error("Error in streaming update:", error);
-          }
-        };
-        
-        // Override the global streaming update function to use our local implementation
-        globalThis.streamingUpdateHandler = handleStreamingUpdate;
-        
-        // Function to finalize a streaming response (called when a stream is complete)
-        const finalizeResponse = (displayName: string, finalText: string) => {
-          // If this was an initial response
-          if (streamingResponses[displayName] && !initialResponses[displayName]) {
-            initialResponses[displayName] = finalText;
-            delete streamingResponses[displayName];
-          }
-          
-          // Clear the active response ID
-          delete activeResponseIds[displayName];
-          
-          // Send update after finalizing
-          sendUpdate();
-        };
-        
-        // Get initial responses from all models with a friendlier prompt
-        const initialPromises = models.map(async (model: { id: string; provider: string }) => {
-          try {
-            const initialPrompt = `
-You are participating in a collaborative discussion on the following topic:
+          // Get initial responses from all models
+          const initialPromises = models.map(async (model) => {
+            try {
+              console.log(`Getting initial response from model: ${model.id}`)
+              const initialPrompt = `
+You are ${formatModelName(model.id, model.provider)} participating in a friendly conversation about:
 
 "${prompt}"
 
@@ -153,54 +70,86 @@ Please share your initial thoughts on this topic. Be thoughtful but conversation
 
 This is a friendly conversation, not a formal debate. Share your valuable insights while being open to reaching consensus with others.
 `;
-            
-            const displayName = formatModelName(model.id, model.provider);
-            
-            // Add placeholder to show a model is responding
-            streamingResponses[displayName] = "Thinking...";
-            sendUpdate();
-            
-            const response = await getModelResponse(initialPrompt, model.id, model.provider)
-            
-            // Finalize the response
-            finalizeResponse(displayName, response);
-          } catch (error) {
-            console.error(`Error getting initial response from ${model.id}:`, error)
-            const displayName = formatModelName(model.id, model.provider)
-            initialResponses[displayName] = `Error: Could not get response from ${model.id}`
-            delete streamingResponses[displayName]; // Clean up any partial streaming
-            sendUpdate()
-          }
-        })
-        
-        // Wait for all initial responses
-        await Promise.all(initialPromises)
-        
-        // Debate rounds with more collaborative prompts
-        for (let round = 0; round < MAX_ROUNDS && !consensusReached; round++) {
-          const roundResponses: Record<string, string> = {}
-          debates.push(roundResponses) // Add the round immediately so it appears in the UI
-          sendUpdate()
-          
-          const combinedResponses = Object.entries(initialResponses)
-            .map(([model, response]) => `${model}: ${response}`)
-            .join('\n\n')
-          
-          // Previous round responses (for rounds after the first)
-          const previousRoundResponses = round > 0 
-            ? Object.entries(debates[round - 1])
-                .map(([model, response]) => `${model}: ${response}`)
-                .join('\n\n')
-            : '';
-          
-          // Process each model response sequentially to make the UI more interactive
-          for (const model of models) {
-            try {
-              let debatePrompt;
               
-              if (round === 0) {
-                // First round prompt - more collaborative
-                debatePrompt = `
+              const displayName = formatModelName(model.id, model.provider)
+              console.log(`Adding placeholder for ${displayName}`)
+              
+              // Add placeholder to show a model is responding
+              streamingResponses[displayName] = "Thinking..."
+              await sendUpdate({ 
+                initialResponses, 
+                streamingResponses,
+                totalSelectedModels: models.length  // Add this to ensure UI knows total count
+              })
+              
+              console.log(`Getting response from ${model.id}`)
+              const response = await getModelResponse(initialPrompt, model.id, model.provider)
+              console.log(`Received response from ${model.id}`)
+              
+              // Finalize the response
+              initialResponses[displayName] = response
+              delete streamingResponses[displayName]
+              await sendUpdate({ 
+                initialResponses, 
+                streamingResponses,
+                totalSelectedModels: models.length  // Add this to ensure UI knows total count
+              })
+            } catch (error) {
+              console.error(`Error getting initial response from ${model.id}:`, error)
+              const displayName = formatModelName(model.id, model.provider)
+              initialResponses[displayName] = `Error: Could not get response from ${model.id}`
+              delete streamingResponses[displayName]
+              await sendUpdate({ 
+                initialResponses, 
+                streamingResponses,
+                totalSelectedModels: models.length
+              })
+            }
+          })
+          
+          console.log('Waiting for all initial responses')
+          await Promise.all(initialPromises)
+          console.log('All initial responses received')
+          
+          // Debate rounds with more collaborative prompts
+          for (let round = 0; round < MAX_ROUNDS && !consensusReached; round++) {
+            console.log(`Starting debate round ${round + 1}`)
+            const roundResponses: Record<string, string> = {}
+            
+            // Add the round to debates array and send update immediately
+            debates.push(roundResponses)
+            console.log('Current debates array:', debates.length)
+            await sendUpdate({ 
+              debates,
+              initialResponses,
+              streamingResponses,
+              totalSelectedModels: models.length
+            })
+            console.log('Sent debate update to client')
+            
+            const combinedResponses = Object.entries(initialResponses)
+              .map(([model, response]) => `${model}: ${response}`)
+              .join('\n\n')
+            
+            // Previous round responses (for rounds after the first)
+            const previousRoundResponses = round > 0 
+              ? Object.entries(debates[round - 1])
+                  .map(([model, response]) => `${model}: ${response}`)
+                  .join('\n\n')
+              : ''
+            
+            console.log(`Processing ${models.length} models for round ${round + 1}`)
+            console.log('Previous round responses:', previousRoundResponses.substring(0, 100) + '...')
+            
+            // Process each model response sequentially to make the UI more interactive
+            for (const model of models) {
+              try {
+                console.log(`Getting response from model ${model.id} for round ${round + 1}`)
+                let debatePrompt;
+                
+                if (round === 0) {
+                  // First round prompt - more collaborative
+                  debatePrompt = `
 You are ${formatModelName(model.id, model.provider)} participating in a friendly conversation about:
 
 "${prompt}"
@@ -218,9 +167,9 @@ Look for points of agreement with the other participants. You should:
 
 This is about finding the best collaborative answer. The goal is to reach consensus, not debate. Be friendly and constructive!
 `;
-              } else {
-                // Subsequent rounds - focus on building consensus
-                debatePrompt = `
+                } else {
+                  // Subsequent rounds - focus on building consensus
+                  debatePrompt = `
 You are ${formatModelName(model.id, model.provider)} in round ${round + 1} of our conversation about:
 
 "${prompt}"
@@ -241,341 +190,151 @@ We're working toward consensus! You should:
 
 Let's try to reach a consensus in this round! Focus on agreement and synthesis.
 `;
+                }
+                
+                const response = await getModelResponse(debatePrompt, model.id, model.provider)
+                const displayName = formatModelName(model.id, model.provider)
+                roundResponses[displayName] = response
+                
+                // Send update after each model responds in the debate
+                await sendUpdate({ 
+                  debates,
+                  initialResponses,
+                  streamingResponses,
+                  totalSelectedModels: models.length
+                })
+                console.log(`Sent update after model ${displayName} responded in round ${round + 1}`)
+              } catch (error) {
+                console.error(`Error in debate round ${round} from ${model.id}:`, error)
+                const displayName = formatModelName(model.id, model.provider)
+                roundResponses[displayName] = `Error: Could not get response from ${model.id}`
+                await sendUpdate({ 
+                  debates,
+                  initialResponses,
+                  streamingResponses,
+                  totalSelectedModels: models.length
+                })
               }
+            }
+            
+            // Check if consensus was reached with improved prompt
+            try {
+              const allResponses = Object.values(roundResponses)
               
-              const response = await getModelResponse(debatePrompt, model.id, model.provider)
-              const displayName = formatModelName(model.id, model.provider)
-              roundResponses[displayName] = response
+              // For debugging
+              console.log(`Checking consensus after round ${round}, responses:`, 
+                allResponses.map(r => r.substring(0, 30) + "..."))
               
-              // Send update after each model responds in the debate
-              sendUpdate()
+              const consensusCheck = await checkForConsensus(prompt, allResponses, models, debates)
+              
+              // Log the consensus check results
+              console.log("Consensus check result:", {
+                roundNumber: round,
+                consensusReached: consensusCheck.consensusReached,
+                finalAnswerLength: consensusCheck.finalAnswer ? consensusCheck.finalAnswer.length : 0,
+                finalAnswerPreview: consensusCheck.finalAnswer ? 
+                  consensusCheck.finalAnswer.substring(0, 50) + "..." : "No answer"
+              })
+              
+              if (consensusCheck.consensusReached) {
+                consensusReached = true
+                finalAnswer = consensusCheck.finalAnswer
+                console.log("CONSENSUS REACHED! Final answer:", finalAnswer)
+                
+                // Send final update with consensus
+                await sendUpdate({ 
+                  initialResponses,
+                  streamingResponses,
+                  debates,
+                  finalAnswer,
+                  consensusReached: true,
+                  isFinalUpdate: true,
+                  totalSelectedModels: models.length
+                })
+                break
+              }
             } catch (error) {
-              console.error(`Error in debate round ${round} from ${model.id}:`, error)
-              const displayName = formatModelName(model.id, model.provider)
-              roundResponses[displayName] = `Error: Could not get response from ${model.id}`
-              sendUpdate()
+              console.error(`Error checking consensus in round ${round}:`, error)
             }
           }
           
-          // Check if consensus was reached with improved prompt
-          try {
-            const allResponses = Object.values(roundResponses)
-            
-            // For debugging
-            console.log(`Checking consensus after round ${round}, responses:`, 
-              allResponses.map(r => r.substring(0, 30) + "..."));
-            
-            const consensusCheck = await checkForConsensus(prompt, allResponses, models, debates)
-            
-            // Log the consensus check results
-            console.log("Consensus check result:", {
-              roundNumber: round,
-              consensusReached: consensusCheck.consensusReached,
-              finalAnswerLength: consensusCheck.finalAnswer ? consensusCheck.finalAnswer.length : 0,
-              finalAnswerPreview: consensusCheck.finalAnswer ? 
-                consensusCheck.finalAnswer.substring(0, 50) + "..." : "No answer"
-            });
-            
-            if (consensusCheck.consensusReached) {
-              consensusReached = true
-              finalAnswer = consensusCheck.finalAnswer
-              console.log("CONSENSUS REACHED! Final answer:", finalAnswer);
-              sendUpdate()
-              break
-            }
-          } catch (error) {
-            console.error(`Error checking consensus in round ${round}:`, error)
-          }
-        }
-        
-        // Replace the consensus section with a simpler, more direct approach
-        if (!consensusReached) {
-          console.log("Starting simple consensus loop process")
-          
-          // Get one model to propose a consensus answer
-          const proposerModel = models[0]
-          const displayName = formatModelName(proposerModel.id, proposerModel.provider)
-          
-          // Build context from all previous discussion
-          const allDiscussionContext = [
-            ...Object.entries(initialResponses).map(([model, resp]) => `${model}'s initial thoughts: ${resp}`),
-            ...debates.flatMap((round, i) => 
-              Object.entries(round).map(([model, resp]) => `${model} in round ${i+1}: ${resp}`)
-            )
-          ].join('\n\n');
-          
-          try {
-            // Create a new round for consensus proposal
-            const consensusProposalRound: Record<string, string> = {}
-            debates.push(consensusProposalRound)
-            
-            // Prompt for initial consensus proposal
-            const proposePrompt = `
-You are summarizing a discussion about: "${prompt}"
+          // If no consensus was reached after all rounds, generate a final answer
+          if (!consensusReached) {
+            console.log("No consensus reached after all rounds, generating final answer")
+            const finalPrompt = `
+Based on the following discussion, provide a final consensus answer that best represents the shared understanding:
 
-Here's the full conversation so far:
-${allDiscussionContext}
+INITIAL RESPONSES:
+${Object.entries(initialResponses)
+  .map(([model, response]) => `${model}: ${response}`)
+  .join('\n\n')}
 
-YOUR TASK:
-Based on this discussion, write a balanced consensus answer that all participants would likely agree on.
-This will be shown to the other participants for their approval.
+DEBATE ROUNDS:
+${debates.map((round, i) => `
+Round ${i + 1}:
+${Object.entries(round)
+  .map(([model, response]) => `${model}: ${response}`)
+  .join('\n\n')}
+`).join('\n')}
 
-Your consensus answer should:
-1. Directly address the original topic/question
-2. Focus ONLY on the main points where everyone seems to agree
-3. Be fair to all perspectives shared
-4. Be conversational, helpful and clear
-5. Avoid controversial or divisive statements
-6. Use moderate, balanced language that everyone can accept
-
-Remember that the goal is to create a consensus that ALL participants will agree with.
-Make your answer general enough that it avoids specific points of disagreement.
-
-Provide ONLY the consensus answer - no explanations or additional text. This will be shown directly to other models for approval.
+Please provide a clear, concise consensus answer that synthesizes the key points of agreement from the discussion.
 `
-
-            const proposedConsensus = await getModelResponse(proposePrompt, proposerModel.id, proposerModel.provider)
-            consensusProposalRound[displayName] = `PROPOSED CONSENSUS: ${proposedConsensus}`
             
-            console.log("Initial consensus proposed:", proposedConsensus.substring(0, 100) + "...")
-            sendUpdate()
-            
-            // Start with the proposed consensus
-            let currentConsensus = proposedConsensus
-            let allAgreed = false
-            let consensusRound = 0
-            const maxConsensusRounds = 5 // Prevent infinite loops
-            
-            // Loop until all models agree or max rounds reached
-            while (!allAgreed && consensusRound < maxConsensusRounds) {
-              consensusRound++
-              console.log(`Starting consensus round ${consensusRound}`)
-              
-              // Create a new round for this consensus iteration
-              const consensusVotingRound: Record<string, string> = {}
-              debates.push(consensusVotingRound)
-              
-              let yesVotes = 0
-              let updatedConsensus = null
-              
-              // Ask each model for approval or updates
-              for (let i = 0; i < models.length; i++) {
-                const model = models[i]
-                const modelDisplayName = formatModelName(model.id, model.provider)
-                
-                // Skip the proposer in the first round
-                if (consensusRound === 1 && i === 0) {
-                  consensusVotingRound[modelDisplayName] = "I proposed the consensus above."
-                  yesVotes++
-                  continue
-                }
-                
-                try {
-                  const approvalPrompt = `
-A consensus answer has been proposed for the topic: "${prompt}"
-
-PROPOSED CONSENSUS:
-"${currentConsensus}"
-
-IMPORTANT: The goal is to reach consensus, so please try to agree unless there's a serious issue.
-Small differences in wording or emphasis are not sufficient reasons to disagree.
-
-Do you agree with this as the final consensus answer?
-
-IF YOU AGREE: Reply with EXACTLY "YES" (all caps, just the word YES).
-IF YOU STRONGLY DISAGREE: Provide a VERY specific and BRIEF suggested revision to the consensus answer.
-
-Your response will be shown directly to other models. If you say YES, we'll move forward with this answer.
-If you suggest a revision, your revision may become the new proposed consensus.
-
-Remember: Unless there are major problems, it's better to agree and move forward with consensus.
-`
-
-                  const response = await getModelResponse(approvalPrompt, model.id, model.provider)
-                  consensusVotingRound[modelDisplayName] = response
-                  
-                  // Check if this is a YES response - more permissive matching to catch variations
-                  if (response.trim().toUpperCase().includes("YES") || 
-                      response.trim().toUpperCase().startsWith("I AGREE") ||
-                      response.trim().toUpperCase().startsWith("AGREE")) {
-                    yesVotes++
-                    // Override the displayed response to show clear agreement
-                    consensusVotingRound[modelDisplayName] = "YES"
-                  } else if (!updatedConsensus && response.trim().length > 5) {
-                    // Use the first non-agreeing response as an updated proposal
-                    updatedConsensus = response
-                  }
-                  
-                  sendUpdate()
-                } catch (error) {
-                  console.error(`Error getting consensus approval from ${model.id}:`, error)
-                  consensusVotingRound[modelDisplayName] = `Error: Could not get response from ${model.id}`
-                  sendUpdate()
-                }
-              }
-              
-              // Check if all models have agreed
-              if (yesVotes === models.length) {
-                allAgreed = true
-                consensusReached = true
-                finalAnswer = currentConsensus
-                console.log("ALL MODELS AGREED ON CONSENSUS!")
-                sendUpdate()
-                break
-              } 
-              // If not all agreed but we have an updated proposal, use it for the next round
-              else if (updatedConsensus) {
-                console.log(`Not all agreed (${yesVotes}/${models.length}). Updating consensus proposal.`)
-                
-                // Create a new round to show the updated consensus
-                const updatedProposalRound: Record<string, string> = {}
-                debates.push(updatedProposalRound)
-                
-                // Extract a clear answer from the update if needed
-                const cleanedUpdate = updatedConsensus
-                  .replace(/^.*?consensus:?\s*/i, '')
-                  .replace(/^["']|["']$/g, '')
-                  .trim();
-                  
-                currentConsensus = cleanedUpdate
-                updatedProposalRound[formatModelName(models[0].id, models[0].provider)] = `UPDATED CONSENSUS: ${currentConsensus}`
-                
-                sendUpdate()
-              }
-              // If more than half agreed, we can consider it a consensus
-              else if (yesVotes >= Math.ceil(models.length / 2)) {
-                console.log(`Majority consensus reached (${yesVotes}/${models.length}).`)
-                allAgreed = true
-                consensusReached = true
-                finalAnswer = currentConsensus
-                sendUpdate()
-                break
-              }
-              // If this is the last round and we still don't have consensus
-              else if (consensusRound === maxConsensusRounds - 1) {
-                console.log(`Last consensus round (${consensusRound}) with ${yesVotes}/${models.length} agreements. Forcing consensus.`)
-                // Force consensus on the last round
-                consensusReached = true
-                finalAnswer = currentConsensus
-                sendUpdate()
-                break
-              }
-            }
-            
-            // If we exit the loop without consensus, use the last proposal anyway
-            if (!consensusReached) {
-              console.log("Max consensus rounds reached, using last proposal")
-              consensusReached = true
-              finalAnswer = currentConsensus
-              sendUpdate()
-            }
-          } catch (error) {
-            console.error("Error in simplified consensus process:", error)
-            
-            // Fallback if the consensus process fails
             try {
-              console.log("Using fallback consensus method")
-              const fallbackPrompt = `
-Create a simple consensus answer for the topic: "${prompt}" based on the debate.
-Provide only the direct answer, no explanations or meta-commentary.
-`
-              const fallbackConsensus = await getModelResponse(fallbackPrompt, models[0].id, models[0].provider)
-              finalAnswer = fallbackConsensus
-              consensusReached = true
-              sendUpdate()
-            } catch (e) {
-              console.error("Even fallback consensus failed:", e)
-              finalAnswer = `The key takeaway about "${prompt}" is that it has multiple valid perspectives worth considering.`
-              consensusReached = true
-              sendUpdate()
+              const consensusModel = models[0] // Use the first model to generate the final answer
+              finalAnswer = await getModelResponse(finalPrompt, consensusModel.id, consensusModel.provider)
+              console.log("Generated final answer:", finalAnswer)
+              
+              // Send final update with generated answer
+              await sendUpdate({ 
+                initialResponses,
+                streamingResponses,
+                debates,
+                finalAnswer,
+                consensusReached: true,
+                isFinalUpdate: true,
+                totalSelectedModels: models.length
+              })
+            } catch (error) {
+              console.error("Error generating final answer:", error)
+              await sendUpdate({ 
+                initialResponses,
+                streamingResponses,
+                debates,
+                finalAnswer: "Unable to generate a final consensus answer.",
+                consensusReached: true,
+                isFinalUpdate: true,
+                totalSelectedModels: models.length
+              })
             }
           }
-        }
-        
-        // If consensus was reached, ensure the final answer is sent
-        if (consensusReached && finalAnswer) {
-          await sendFinalConsensus();
-        } 
-        // If we still don't have a final answer for any reason, generate one anyway
-        else if (!finalAnswer) {
+        } catch (error) {
+          console.error('Error in debate processing:', error)
+          await sendUpdate({ error: 'Failed to process debate', totalSelectedModels: models.length })
+        } finally {
+          // Only close the controller after all updates are sent
           try {
-            console.log("No final answer found, creating one as fallback");
-            // Use all available data for a last-resort consensus
-            const allResponses = [
-              ...Object.entries(initialResponses).map(([model, resp]) => `${model}'s initial thoughts: ${resp}`),
-              ...debates.flatMap((round, i) => 
-                Object.entries(round).map(([model, resp]) => `${model} in round ${i+1}: ${resp}`)
-              )
-            ];
-            
-            // Simple prompt for generating a final answer
-            const fallbackPrompt = `
-I need you to create a consensus answer for this discussion topic: "${prompt}"
-
-Here's what the participants have said:
-${allResponses.join('\n\n')}
-
-YOUR TASK:
-Write a direct, friendly answer that:
-1. Represents what most participants would agree with
-2. Directly answers the original question/topic
-3. Is conversational and helpful
-4. Doesn't mention that it's a consensus or synthesis
-
-Just give me the consensus answer text - nothing else. This will be displayed directly to the user as the answer to their question.
-`
-            // Use the first model to generate the answer
-            let fallbackAnswer
-            try {
-              fallbackAnswer = await getModelResponse(fallbackPrompt, models[0].id, models[0].provider)
-            } catch (e) {
-              // If the first model fails, try with a different model
-              console.log("First model failed for fallback, trying another model")
-              if (models.length > 1) {
-                fallbackAnswer = await getModelResponse(fallbackPrompt, models[1].id, models[1].provider)
-              } else {
-                // Last resort fallback
-                fallbackAnswer = `Based on the discussion, the participants generally agree that ${prompt} involves multiple perspectives. While there are different viewpoints, the key insight is that this topic requires thoughtful consideration of various factors.`
-              }
-            }
-            
-            finalAnswer = fallbackAnswer
-            consensusReached = true
-            
-            console.log("Generated fallback consensus:", finalAnswer)
-            
-            await sendFinalConsensus();
+            controller.close()
           } catch (error) {
-            console.error('Error creating fallback consensus:', error)
-            
-            // Ultimate emergency fallback
-            finalAnswer = `After discussing "${prompt}", the key takeaway is that this topic has multiple perspectives worth considering.`;
-            consensusReached = true;
-            
-            await sendFinalConsensus();
+            console.error('Error closing controller:', error)
           }
         }
-        
-        // One last regular update before closing the stream
-        sendUpdate();
-        
-        // Close the stream immediately without delay
-        controller.close();
       }
     })
-    
+
     return new Response(stream, {
       headers: {
-        'Content-Type': 'application/json',
-        'Transfer-Encoding': 'chunked',
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     })
   } catch (error) {
     console.error('Error in debate API:', error)
-    return NextResponse.json(
-      { error: 'Failed to process debate' },
-      { status: 500 }
-    )
+    return new Response(JSON.stringify({ error: 'Failed to process debate' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }
 

@@ -91,6 +91,8 @@ export default function Home() {
     }
     
     const selectedModels = models.filter(model => model.selected)
+    console.log('Selected models:', selectedModels.map(m => ({ id: m.id, provider: m.provider })))
+    
     if (selectedModels.length < 2) {
       setError('Please select at least 2 models')
       return
@@ -98,6 +100,8 @@ export default function Home() {
 
     // Store the total number of selected models for this debate
     setTotalSelectedModels(selectedModels.length)
+    console.log('Starting debate with prompt:', prompt)
+    console.log('Total selected models:', selectedModels.length)
 
     setError(null)
     setIsLoading(true)
@@ -114,6 +118,7 @@ export default function Home() {
     abortControllerRef.current = new AbortController()
 
     try {
+      console.log('Making API request to /api/debate')
       const response = await fetch('/api/debate', {
         method: 'POST',
         headers: {
@@ -127,31 +132,47 @@ export default function Home() {
       })
 
       if (!response.ok) {
+        console.error('API response not OK:', response.status, response.statusText)
         throw new Error('Failed to start debate')
       }
 
+      console.log('API response received, starting to read stream')
       const reader = response.body?.getReader()
       if (!reader) {
+        console.error('No response body available')
         throw new Error('No response body')
       }
 
+      console.log('Starting to read stream')
       const decoder = new TextDecoder()
       let completeData = ''
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          console.log('Stream reading complete')
+          break
+        }
 
         // Decode the chunk
         const chunk = decoder.decode(value, { stream: true })
+        console.log('Received chunk:', chunk.substring(0, 100) + '...')
         completeData = chunk // We replace instead of append because each chunk contains the full state
 
         try {
           // Parse the data
           const data = JSON.parse(completeData)
+          console.log('Parsed data:', {
+            hasInitialResponses: Boolean(data.initialResponses),
+            hasStreamingResponses: Boolean(data.streamingResponses),
+            hasDebates: Boolean(data.debates),
+            hasFinalAnswer: Boolean(data.finalAnswer),
+            isFinalUpdate: Boolean(data.isFinalUpdate)
+          })
           
           // Update state with the latest data
           if (data.initialResponses) {
+            console.log('Updating initial responses:', Object.keys(data.initialResponses))
             setInitialResponses(data.initialResponses)
             // Update response progress
             setResponseProgress(prev => ({
@@ -162,11 +183,25 @@ export default function Home() {
           
           // Update streaming responses state
           if (data.streamingResponses) {
+            console.log('Updating streaming responses:', Object.keys(data.streamingResponses))
             setStreamingResponses(data.streamingResponses)
           }
           
           if (data.debates) {
-            setDebates([...data.debates]) // Create a new array to trigger re-render
+            console.log('Updating debates:', {
+              currentDebatesLength: debates.length,
+              newDebatesLength: data.debates.length,
+              newDebates: data.debates.map((round: Record<string, string>) => ({
+                roundNumber: round,
+                responses: Object.keys(round)
+              }))
+            })
+            // Ensure we're properly handling the debates array
+            const newDebates = data.debates.map((round: Record<string, string>) => {
+              // Ensure each round is a new object to trigger re-render
+              return { ...round }
+            })
+            setDebates(newDebates)
           }
           
           // Special handling for final answer - log more details and ensure it's captured

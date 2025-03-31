@@ -65,6 +65,26 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
     return Object.keys(round).length
   }
 
+  // Get total expected models count
+  const getTotalModels = () => {
+    // First preference: use the total selected models passed from parent
+    if (totalSelectedModels > 0) {
+      return totalSelectedModels;
+    }
+    
+    // Second preference: count models that have responded plus those still thinking
+    const initialCount = initialResponses ? Object.keys(initialResponses).length : 0;
+    const streamingCount = streamingResponses ? Object.keys(streamingResponses).length : 0;
+    
+    // Only count unique models (a model might be in both initialResponses and streamingResponses)
+    const uniqueModelNames = new Set([
+      ...Object.keys(initialResponses || {}),
+      ...Object.keys(streamingResponses || {})
+    ]);
+    
+    return uniqueModelNames.size > 0 ? uniqueModelNames.size : Math.max(initialCount + streamingCount, 2);
+  }
+
   if (isLoading && !initialResponses && Object.keys(streamingResponses).length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
@@ -138,12 +158,12 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
           <h2 className="text-xl font-semibold">Initial Responses</h2>
           <div className="flex items-center">
             <div className="mr-3 font-medium text-blue-600">
-              {getCurrentResponses(displayResponses)}/{denominator} responded
+              {getCurrentResponses(initialResponses || {})}/{getTotalModels()} responded
             </div>
             <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
               <div 
                 className="bg-blue-600 h-2.5 rounded-full" 
-                style={{ width: `${(getCurrentResponses(displayResponses) / Math.max(1, denominator)) * 100}%` }}
+                style={{ width: `${(getCurrentResponses(initialResponses || {}) / Math.max(1, getTotalModels())) * 100}%` }}
               ></div>
             </div>
             <span className="text-gray-500">
@@ -201,12 +221,12 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
                   <h3 className="font-medium text-gray-800">Round {roundIndex + 1}</h3>
                   <div className="flex items-center">
                     <div className="mr-3 font-medium text-blue-600">
-                      {getCurrentResponses(round)}/{denominator} responded
+                      {getCurrentResponses(round)}/{getTotalModels()} responded
                     </div>
                     <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
                       <div 
                         className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${(getCurrentResponses(round) / Math.max(1, denominator)) * 100}%` }}
+                        style={{ width: `${(getCurrentResponses(round) / Math.max(1, getTotalModels())) * 100}%` }}
                       ></div>
                     </div>
                     <span className="text-gray-500">
