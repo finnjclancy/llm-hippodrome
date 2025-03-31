@@ -25,11 +25,36 @@ You'll need an API key for:
 ### Getting an OpenRouter API Key
 
 1. Visit [OpenRouter's website](https://openrouter.ai/) and create an account
-2. After signing in, go to the [API Keys section](https://openrouter.ai/keys)
-3. Click on "Create Key" to generate a new API key
-4. Give your key a name (e.g., "LLM Hippodrome")
-5. Copy the generated key - it should start with "sk-or-v1-..."
-6. OpenRouter provides a free tier with limited credits that refresh daily, which is perfect for trying out the application
+   - You can sign in with Google, GitHub, or email
+   - This is required to access all models in the application
+
+2. After signing in, navigate to the [API Keys section](https://openrouter.ai/keys)
+   - You'll find this in the left sidebar menu
+
+3. Click on the "+ Create Key" button to generate a new API key
+   - A dialog will appear to configure your key
+
+4. Configure your key:
+   - Give your key a name (e.g., "LLM Hippodrome")
+   - Set your rate limit or leave as default
+   - Optionally set other parameters like request TTL
+
+5. Copy the generated API key
+   - It will look something like: `sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+   - Make sure to copy it immediately as you won't be able to see it again
+
+6. Use the key in LLM Hippodrome:
+   - When you first open the application, you'll see an API key input field
+   - Paste your key into this field and click "Save Key"
+   - Your key is stored locally in your browser and is sent only to OpenRouter (never to our servers)
+
+7. Free tier benefits:
+   - OpenRouter provides new accounts with free credits
+   - These refresh daily, so you can use the application without payment
+   - Free tier allows access to most models with reasonable rate limits
+   - For more intensive usage, you can add credits to your OpenRouter account
+
+If you need to update or change your API key, click "Edit" in the API key section of the application.
 
 ### Installation
 
@@ -96,4 +121,4 @@ If you encounter issues with specific models, try selecting different ones or sm
 - React
 - TypeScript
 - Tailwind CSS
-- OpenRouter API 
+- OpenRouter API
