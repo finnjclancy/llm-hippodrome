@@ -1,0 +1,251 @@
+import React, { useState } from 'react'
+
+interface DebateAreaProps {
+  isLoading: boolean
+  initialResponses: Record<string, string> | null
+  streamingResponses?: Record<string, string>
+  debates: Array<Record<string, string>>
+  finalAnswer: string | null
+  onConsensus: () => void
+  totalSelectedModels?: number
+}
+
+export const DebateArea: React.FC<DebateAreaProps> = ({
+  isLoading,
+  initialResponses,
+  streamingResponses = {},
+  debates,
+  finalAnswer,
+  onConsensus,
+  totalSelectedModels = 0,
+}) => {
+  // State for collapsing the entire initial responses section
+  const [showInitialResponses, setShowInitialResponses] = useState(true)
+  
+  // Track which debate rounds are expanded
+  const [expandedRounds, setExpandedRounds] = useState<Record<number, boolean>>({})
+  // Track which model responses are expanded
+  const [expandedResponses, setExpandedResponses] = useState<Record<string, boolean>>({})
+
+  // Toggle a debate round's expanded state
+  const toggleRound = (roundIndex: number) => {
+    setExpandedRounds(prev => ({
+      ...prev,
+      [roundIndex]: !prev[roundIndex]
+    }))
+  }
+
+  // Toggle a model response's expanded state
+  const toggleResponse = (roundIndex: number, model: string) => {
+    const key = `${roundIndex}-${model}`
+    setExpandedResponses(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }))
+  }
+
+  // Track which initial responses are expanded
+  const [expandedInitialResponses, setExpandedInitialResponses] = useState<Record<string, boolean>>({})
+
+  // Toggle an initial response's expanded state
+  const toggleInitialResponse = (model: string) => {
+    setExpandedInitialResponses(prev => ({
+      ...prev,
+      [model]: !prev[model]
+    }))
+  }
+
+  // Get total expected responses for a round based on initial responses
+  const getTotalExpectedResponses = () => {
+    return initialResponses ? Object.keys(initialResponses).length : 0
+  }
+
+  // Get current responses for a round
+  const getCurrentResponses = (round: Record<string, string>) => {
+    return Object.keys(round).length
+  }
+
+  if (isLoading && !initialResponses && Object.keys(streamingResponses).length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center text-gray-500">
+            <div className="flex justify-center">
+              <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <p className="mt-4 text-lg">The debate is in progress...</p>
+            <p className="mt-2">AI models are thinking and responding to each other.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show streaming responses if no complete responses are available yet
+  if (isLoading && !initialResponses && Object.keys(streamingResponses).length > 0) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Initial Responses (Streaming)</h2>
+          <div className="space-y-4">
+            {Object.entries(streamingResponses).map(([model, response]) => (
+              <div key={model} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="p-4">
+                  <h3 className="font-medium text-gray-800 mb-2">{model}</h3>
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{response}</p>
+                    {/* Show typing indicator */}
+                    <span className="inline-block mt-2 text-gray-500">
+                      <span className="animate-pulse">•</span>
+                      <span className="animate-pulse delay-100">•</span>
+                      <span className="animate-pulse delay-200">•</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!initialResponses && Object.keys(streamingResponses).length === 0) {
+    return null
+  }
+
+  const denominator = totalSelectedModels > 0 ? totalSelectedModels : getCurrentResponses(initialResponses || {})
+  
+  // Combine initialResponses with streamingResponses for display
+  const displayResponses = {
+    ...(initialResponses || {}),
+    ...streamingResponses
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Consensus section moved to page.tsx */}
+
+      {/* Initial Responses with collapsible section */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <button 
+          onClick={() => setShowInitialResponses(!showInitialResponses)}
+          className="w-full flex justify-between items-center mb-4 text-left focus:outline-none"
+        >
+          <h2 className="text-xl font-semibold">Initial Responses</h2>
+          <div className="flex items-center">
+            <div className="mr-3 font-medium text-blue-600">
+              {getCurrentResponses(displayResponses)}/{denominator} responded
+            </div>
+            <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${(getCurrentResponses(displayResponses) / Math.max(1, denominator)) * 100}%` }}
+              ></div>
+            </div>
+            <span className="text-gray-500">
+              {showInitialResponses ? '▼' : '▶'}
+            </span>
+          </div>
+        </button>
+        
+        {showInitialResponses && (
+          <div className="space-y-4">
+            {Object.entries(displayResponses).map(([model, response]) => (
+              <div key={model} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => toggleInitialResponse(model)}
+                  className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 focus:outline-none"
+                >
+                  <h3 className="font-medium text-gray-800">{model}</h3>
+                  <div className="flex items-center">
+                    {/* Show typing indicator if this is a streaming response */}
+                    {streamingResponses[model] && initialResponses && !initialResponses[model] && (
+                      <span className="mr-2 text-gray-500">
+                        <span className="animate-pulse">•</span>
+                        <span className="animate-pulse delay-100">•</span>
+                        <span className="animate-pulse delay-200">•</span>
+                      </span>
+                    )}
+                    <span className="text-gray-500">
+                      {expandedInitialResponses[model] ? '▼' : '▶'}
+                    </span>
+                  </div>
+                </button>
+                
+                {expandedInitialResponses[model] && (
+                  <div className="p-4 pt-0 border-t border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{response}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Debate Rounds */}
+      {debates.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Debate Rounds</h2>
+          <div className="space-y-4">
+            {debates.map((round, roundIndex) => (
+              <div key={roundIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => toggleRound(roundIndex)}
+                  className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 focus:outline-none"
+                >
+                  <h3 className="font-medium text-gray-800">Round {roundIndex + 1}</h3>
+                  <div className="flex items-center">
+                    <div className="mr-3 font-medium text-blue-600">
+                      {getCurrentResponses(round)}/{denominator} responded
+                    </div>
+                    <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full" 
+                        style={{ width: `${(getCurrentResponses(round) / Math.max(1, denominator)) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-gray-500">
+                      {expandedRounds[roundIndex] ? '▼' : '▶'}
+                    </span>
+                  </div>
+                </button>
+                
+                {expandedRounds[roundIndex] && (
+                  <div className="p-4 pt-0 border-t border-gray-200 space-y-3">
+                    {Object.entries(round).map(([model, response]) => {
+                      const responseKey = `${roundIndex}-${model}`;
+                      return (
+                        <div key={model} className="border border-gray-100 rounded-md overflow-hidden">
+                          <button
+                            onClick={() => toggleResponse(roundIndex, model)}
+                            className="w-full flex justify-between items-center p-2 text-left hover:bg-gray-50 focus:outline-none"
+                          >
+                            <h4 className="font-medium text-gray-700">{model}</h4>
+                            <span className="text-gray-500">
+                              {expandedResponses[responseKey] ? '▼' : '▶'}
+                            </span>
+                          </button>
+                          
+                          {expandedResponses[responseKey] && (
+                            <div className="p-3 pt-0 border-t border-gray-200">
+                              <p className="text-gray-700 whitespace-pre-wrap">{response}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
