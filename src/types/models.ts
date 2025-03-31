@@ -12,7 +12,6 @@ export interface CompanyGroup {
 }
 
 export const COMPANIES = [
-  'OpenAI',
   'Google',
   'Meta',
   'Mistral',
@@ -37,73 +36,66 @@ export const COMPANIES = [
 
 export const MODEL_GROUPS: CompanyGroup[] = [
   {
-    company: 'OpenAI',
-    models: [
-      { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', company: 'OpenAI', selected: true },
-      { id: 'gpt-4o-mini', name: 'GPT-4o-mini', provider: 'openai', company: 'OpenAI', selected: true },
-    ]
-  },
-  {
     company: 'Google',
     models: [
+      { id: 'google/gemini-flash-1.5-8b-exp', name: 'Gemini Flash 1.5 8B', provider: 'openrouter', company: 'Google', selected: true },
       { id: 'google/gemini-2.5-pro-exp-03-25', name: 'Gemini 2.5 Pro', provider: 'openrouter', company: 'Google', selected: false },
-      { id: 'google/gemini-flash-1.5-8b-exp', name: 'Gemini Flash 1.5 8B', provider: 'openrouter', company: 'Google', selected: false },
       { id: 'google/gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', provider: 'openrouter', company: 'Google', selected: false },
       { id: 'google/gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', provider: 'openrouter', company: 'Google', selected: false },
-      { id: 'google/gemini-2.0-flash-thinking-exp', name: 'Gemini 2.0 Flash Thinking', provider: 'openrouter', company: 'Google', selected: false },
-      { id: 'google/gemini-2.0-flash-thinking-exp-1219', name: 'Gemini 2.0 Flash Thinking 1219', provider: 'openrouter', company: 'Google', selected: false },
-      { id: 'google/learnlm-1.5-pro-experimental', name: 'LearnLM 1.5 Pro', provider: 'openrouter', company: 'Google', selected: false },
       { id: 'google/gemma-3-27b-it', name: 'Gemma 3 27B', provider: 'openrouter', company: 'Google', selected: false },
+      { id: 'google/gemini-2.0-flash-thinking-exp-1219', name: 'Gemini 2.0 Flash Thinking 1219', provider: 'openrouter', company: 'Google', selected: false },
       { id: 'google/gemma-3-12b-it', name: 'Gemma 3 12B', provider: 'openrouter', company: 'Google', selected: false },
       { id: 'google/gemma-3-4b-it', name: 'Gemma 3 4B', provider: 'openrouter', company: 'Google', selected: false },
-      { id: 'google/gemma-3-1b-it', name: 'Gemma 3 1B', provider: 'openrouter', company: 'Google', selected: false },
       { id: 'google/gemma-2-9b-it', name: 'Gemma 2 9B', provider: 'openrouter', company: 'Google', selected: false },
+      { id: 'google/learnlm-1.5-pro-experimental', name: 'LearnLM 1.5 Pro', provider: 'openrouter', company: 'Google', selected: false },
+      { id: 'google/gemma-3-1b-it', name: 'Gemma 3 1B', provider: 'openrouter', company: 'Google', selected: false },
+      { id: 'google/gemini-2.0-flash-thinking-exp', name: 'Gemini 2.0 Flash Thinking', provider: 'openrouter', company: 'Google', selected: false },
     ]
   },
   {
     company: 'Meta',
     models: [
-      { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', provider: 'openrouter', company: 'Meta', selected: false },
-      { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', provider: 'openrouter', company: 'Meta', selected: false },
+      { id: 'meta-llama/llama-3.2-1b-instruct', name: 'Llama 3.2 1B', provider: 'openrouter', company: 'Meta', selected: true },
+      { id: 'meta-llama/llama-3.2-3b-instruct', name: 'Llama 3.2 3B', provider: 'openrouter', company: 'Meta', selected: true },
       { id: 'meta-llama/llama-3-8b-instruct', name: 'Llama 3 8B', provider: 'openrouter', company: 'Meta', selected: false },
+      { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', provider: 'openrouter', company: 'Meta', selected: false },
       { id: 'meta-llama/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', provider: 'openrouter', company: 'Meta', selected: false },
-      { id: 'meta-llama/llama-3.2-3b-instruct', name: 'Llama 3.2 3B', provider: 'openrouter', company: 'Meta', selected: false },
-      { id: 'meta-llama/llama-3.2-1b-instruct', name: 'Llama 3.2 1B', provider: 'openrouter', company: 'Meta', selected: false },
+      { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', provider: 'openrouter', company: 'Meta', selected: false },
     ]
   },
   {
     company: 'Mistral',
     models: [
-      { id: 'mistralai/mistral-nemo', name: 'Mistral Nemo', provider: 'openrouter', company: 'Mistral', selected: false },
-      { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B', provider: 'openrouter', company: 'Mistral', selected: false },
-      { id: 'mistralai/mistral-small-24b-instruct-2501', name: 'Mistral Small 24B', provider: 'openrouter', company: 'Mistral', selected: false },
+      { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B', provider: 'openrouter', company: 'Mistral', selected: true },
       { id: 'mistralai/mistral-small-3.1-24b-instruct', name: 'Mistral Small 3.1 24B', provider: 'openrouter', company: 'Mistral', selected: false },
+      { id: 'mistralai/mistral-small-24b-instruct-2501', name: 'Mistral Small 24B', provider: 'openrouter', company: 'Mistral', selected: false },
+      { id: 'mistralai/mistral-nemo', name: 'Mistral Nemo', provider: 'openrouter', company: 'Mistral', selected: false },
     ]
   },
   {
     company: 'DeepSeek',
     models: [
+      { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'openrouter', company: 'DeepSeek', selected: false },
       { id: 'deepseek/deepseek-chat-v3-0324', name: 'DeepSeek Chat v3', provider: 'openrouter', company: 'DeepSeek', selected: false },
       { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'openrouter', company: 'DeepSeek', selected: false },
       { id: 'deepseek/deepseek-r1-zero', name: 'DeepSeek R1 Zero', provider: 'openrouter', company: 'DeepSeek', selected: false },
       { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill Llama 70B', provider: 'openrouter', company: 'DeepSeek', selected: false },
+      { id: 'deepseek/deepseek-v3-base', name: 'DeepSeek V3 Base', provider: 'openrouter', company: 'DeepSeek', selected: false },
       { id: 'deepseek/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Distill Qwen 32B', provider: 'openrouter', company: 'DeepSeek', selected: false },
       { id: 'deepseek/deepseek-r1-distill-qwen-14b', name: 'DeepSeek R1 Distill Qwen 14B', provider: 'openrouter', company: 'DeepSeek', selected: false },
-      { id: 'deepseek/deepseek-v3-base', name: 'DeepSeek V3 Base', provider: 'openrouter', company: 'DeepSeek', selected: false },
-      { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'openrouter', company: 'DeepSeek', selected: false },
     ]
   },
   {
     company: 'Qwen',
     models: [
+      { id: 'qwen/qwen-2-7b-instruct', name: 'Qwen 2 7B', provider: 'openrouter', company: 'Qwen', selected: true },
+      { id: 'qwen/qwen2.5-vl-3b-instruct', name: 'Qwen 2.5 VL 3B', provider: 'openrouter', company: 'Qwen', selected: false },
+      { id: 'qwen/qwen-2.5-vl-7b-instruct', name: 'Qwen 2.5 VL 7B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwq-32b', name: 'QWQ 32B', provider: 'openrouter', company: 'Qwen', selected: false },
-      { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwen-2.5-coder-32b-instruct', name: 'Qwen 2.5 Coder 32B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwen2.5-vl-72b-instruct', name: 'Qwen 2.5 VL 72B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwen2.5-vl-32b-instruct', name: 'Qwen 2.5 VL 32B', provider: 'openrouter', company: 'Qwen', selected: false },
-      { id: 'qwen/qwen2.5-vl-3b-instruct', name: 'Qwen 2.5 VL 3B', provider: 'openrouter', company: 'Qwen', selected: false },
-      { id: 'qwen/qwen-2.5-vl-7b-instruct', name: 'Qwen 2.5 VL 7B', provider: 'openrouter', company: 'Qwen', selected: false },
-      { id: 'qwen/qwen-2-7b-instruct', name: 'Qwen 2 7B', provider: 'openrouter', company: 'Qwen', selected: false },
+      { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'openrouter', company: 'Qwen', selected: false },
       { id: 'qwen/qwq-32b-preview', name: 'QWQ 32B Preview', provider: 'openrouter', company: 'Qwen', selected: false },
     ]
   },
@@ -116,16 +108,8 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'Microsoft',
     models: [
+      { id: 'microsoft/phi-3-mini-128k-instruct', name: 'Phi-3 Mini 128K', provider: 'openrouter', company: 'Microsoft', selected: true },
       { id: 'microsoft/phi-3-medium-128k-instruct', name: 'Phi-3 Medium 128K', provider: 'openrouter', company: 'Microsoft', selected: false },
-      { id: 'microsoft/phi-3-mini-128k-instruct', name: 'Phi-3 Mini 128K', provider: 'openrouter', company: 'Microsoft', selected: false },
-    ]
-  },
-  {
-    company: 'Anthropic',
-    models: [
-      { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus', provider: 'openrouter', company: 'Anthropic', selected: false },
-      { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'openrouter', company: 'Anthropic', selected: false },
-      { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'openrouter', company: 'Anthropic', selected: false },
     ]
   },
   {
@@ -150,8 +134,8 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'Open-R1',
     models: [
+      { id: 'open-r1/olympiccoder-7b', name: 'OlympicCoder 7B', provider: 'openrouter', company: 'Open-R1', selected: true },
       { id: 'open-r1/olympiccoder-32b', name: 'OlympicCoder 32B', provider: 'openrouter', company: 'Open-R1', selected: false },
-      { id: 'open-r1/olympiccoder-7b', name: 'OlympicCoder 7B', provider: 'openrouter', company: 'Open-R1', selected: false },
     ]
   },
   {
@@ -187,7 +171,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'OpenChat',
     models: [
-      { id: 'openchat/openchat-7b', name: 'OpenChat 7B', provider: 'openrouter', company: 'OpenChat', selected: false },
+      { id: 'openchat/openchat-7b', name: 'OpenChat 7B', provider: 'openrouter', company: 'OpenChat', selected: true },
     ]
   },
   {
@@ -199,7 +183,7 @@ export const MODEL_GROUPS: CompanyGroup[] = [
   {
     company: 'HuggingFace',
     models: [
-      { id: 'huggingfaceh4/zephyr-7b-beta', name: 'Zephyr 7B Beta', provider: 'openrouter', company: 'HuggingFace', selected: false },
+      { id: 'huggingfaceh4/zephyr-7b-beta', name: 'Zephyr 7B Beta', provider: 'openrouter', company: 'HuggingFace', selected: true },
     ]
   },
   {

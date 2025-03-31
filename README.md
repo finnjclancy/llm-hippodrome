@@ -4,11 +4,11 @@ A debating arena for LLMs to come to a shared conclusion on any topic.
 
 ## Overview
 
-LLM Hippodrome is a Next.js application that allows users to submit a prompt and have multiple AI models debate their responses until they reach a consensus. The application leverages models from various providers including OpenAI, Google, Meta, Mistral, DeepSeek, Qwen, and many others via OpenRouter.
+LLM Hippodrome is a Next.js application that allows users to submit a prompt and have multiple AI models debate their responses until they reach a consensus. The application leverages models from various providers including Google, Meta, Mistral, DeepSeek, Qwen, and many others via OpenRouter.
 
 ## Features
 
-- **Extensive Model Selection**: Choose from over 50 models across 20+ companies including OpenAI, Google, Meta, Mistral, DeepSeek, Qwen, NVIDIA, Microsoft, Anthropic, and many more.
+- **Extensive Model Selection**: Choose from over 50 models across 20+ companies including Google, Meta, Mistral, DeepSeek, Qwen, NVIDIA, Microsoft, and many more.
 - **Initial Responses**: View each model's initial response to your prompt in real-time as they come in.
 - **Debate Rounds**: Watch as models evaluate each other's responses and debate their positions.
 - **Streaming Responses**: See model responses as they are being generated rather than waiting for all to complete.
@@ -19,9 +19,17 @@ LLM Hippodrome is a Next.js application that allows users to submit a prompt and
 
 ### Prerequisites
 
-You'll need API keys for:
-- OpenAI
-- OpenRouter (required for non-OpenAI models)
+You'll need an API key for:
+- OpenRouter (required for all models)
+
+### Getting an OpenRouter API Key
+
+1. Visit [OpenRouter's website](https://openrouter.ai/) and create an account
+2. After signing in, go to the [API Keys section](https://openrouter.ai/keys)
+3. Click on "Create Key" to generate a new API key
+4. Give your key a name (e.g., "LLM Hippodrome")
+5. Copy the generated key - it should start with "sk-or-v1-..."
+6. OpenRouter provides a free tier with limited credits that refresh daily, which is perfect for trying out the application
 
 ### Installation
 
@@ -36,9 +44,8 @@ cd llm-hippodrome
 npm install
 ```
 
-3. Create a `.env` file in the root directory with your API keys:
+3. Create a `.env` file in the root directory with your API key:
 ```
-OPENAI_API_KEY=your_openai_key
 OPENROUTER_API_KEY=your_openrouter_key
 ```
 
@@ -65,7 +72,6 @@ npm run dev
 
 The application includes models from many providers:
 
-- **OpenAI**: GPT-4o, GPT-4o-mini
 - **Google**: Gemini 2.5 Pro, Gemini Flash, Gemma models (1B to 27B)
 - **Meta**: Llama 3, Llama 3.1, Llama 3.2, Llama 3.3 (various sizes)
 - **Mistral**: Mistral Nemo, Mistral Small, Mistral 7B
@@ -73,8 +79,16 @@ The application includes models from many providers:
 - **Qwen**: Qwen 2, Qwen 2.5, and QWQ models in various sizes
 - **NVIDIA**: Llama 3.1 Nemotron 70B
 - **Microsoft**: Phi-3 models
-- **Anthropic**: Claude 3 (Opus, Sonnet, Haiku)
 - And many more from providers like ByteDance, CognitiveComputations, Open-R1, Featherless, and others
+
+## Notes on Model Availability
+
+Not all models listed may be available in OpenRouter's free tier at all times. Some models may have:
+- Limited usage quotas
+- Temporary unavailability
+- Restrictions on query frequency
+
+If you encounter issues with specific models, try selecting different ones or smaller models with fewer parameters (like 7B or 8B models).
 
 ## Technologies Used
 
@@ -82,5 +96,4 @@ The application includes models from many providers:
 - React
 - TypeScript
 - Tailwind CSS
-- OpenAI API
 - OpenRouter API 
