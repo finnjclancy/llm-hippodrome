@@ -32,14 +32,14 @@ export const PromptInput: React.FC<PromptInputProps> = ({
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Enter Debate Topic</h2>
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+      <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Enter Debate Topic</h2>
       
       <form onSubmit={handleSubmit}>
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <textarea
             ref={textareaRef}
-            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:shadow-outline min-h-[60px] overflow-hidden"
+            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:shadow-outline min-h-[60px] overflow-hidden text-base sm:text-lg touch-manipulation"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="What is the nature of consciousness?"

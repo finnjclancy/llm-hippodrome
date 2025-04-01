@@ -318,11 +318,11 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-8 py-6">
+    <div className="space-y-4 sm:space-y-8 py-4 sm:py-6 px-4 sm:px-6">
       {showWelcomePopup && <WelcomePopup onClose={closeWelcomePopup} />}
       
-      <h1 className="text-5xl font-bold text-center mb-3">LLM Hippodrome</h1>
-      <p className="text-center text-gray-600 mb-6">
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-2 sm:mb-3">LLM Hippodrome</h1>
+      <p className="text-center text-gray-600 text-sm sm:text-base mb-4 sm:mb-6">
         Watch AI models debate and come to a shared conclusion
       </p>
       
@@ -331,7 +331,7 @@ export default function Home() {
       
       <ModelSelector models={models} toggleModel={toggleModel} />
       
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         <PromptInput 
           prompt={prompt} 
           setPrompt={setPrompt} 
@@ -344,7 +344,7 @@ export default function Home() {
         
         {/* Status info - only show when a debate has been started but no consensus yet */}
         {!finalAnswer && (initialResponses || isLoading) && (
-          <div className="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
+          <div className="bg-gray-50 p-2 sm:p-3 rounded border border-gray-200 text-xs sm:text-sm">
             <p>
               <strong>Status:</strong> {isLoading ? 'Debate in progress' : 'Ready'} | 
               <strong> Consensus:</strong> {finalAnswer ? '✅ Found' : '⏳ Not yet found'}

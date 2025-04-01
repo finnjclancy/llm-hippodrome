@@ -87,17 +87,17 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
 
   if (isLoading && !initialResponses && Object.keys(streamingResponses).length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex items-center justify-center py-12">
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-center py-8 sm:py-12">
           <div className="text-center text-gray-500">
             <div className="flex justify-center">
-              <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-6 w-6 sm:h-8 sm:w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </div>
-            <p className="mt-4 text-lg">The debate is in progress...</p>
-            <p className="mt-2">AI models are thinking and responding to each other.</p>
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg">The debate is in progress...</p>
+            <p className="mt-2 text-sm sm:text-base">AI models are thinking and responding to each other.</p>
           </div>
         </div>
       </div>
@@ -146,23 +146,23 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       {/* Consensus section moved to page.tsx */}
 
       {/* Initial Responses with collapsible section */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
         <button 
           onClick={() => setShowInitialResponses(!showInitialResponses)}
-          className="w-full flex justify-between items-center mb-4 text-left focus:outline-none"
+          className="w-full flex justify-between items-center mb-3 sm:mb-4 text-left focus:outline-none touch-manipulation"
         >
-          <h2 className="text-xl font-semibold">Initial Responses</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">Initial Responses</h2>
           <div className="flex items-center">
-            <div className="mr-3 font-medium text-blue-600">
+            <div className="mr-2 sm:mr-3 font-medium text-blue-600 text-sm sm:text-base">
               {getCurrentResponses(initialResponses || {})}/{getTotalModels()} responded
             </div>
-            <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
+            <div className="w-16 sm:w-24 bg-gray-200 rounded-full h-2 sm:h-2.5 mr-2">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+                className="bg-blue-600 h-2 sm:h-2.5 rounded-full" 
                 style={{ width: `${(getCurrentResponses(initialResponses || {}) / Math.max(1, getTotalModels())) * 100}%` }}
               ></div>
             </div>
@@ -173,14 +173,14 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
         </button>
         
         {showInitialResponses && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {Object.entries(displayResponses).map(([model, response]) => (
               <div key={model} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => toggleInitialResponse(model)}
-                  className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 focus:outline-none"
+                  className="w-full flex justify-between items-center p-3 sm:p-4 text-left hover:bg-gray-50 focus:outline-none touch-manipulation"
                 >
-                  <h3 className="font-medium text-gray-800">{model}</h3>
+                  <h3 className="font-medium text-gray-800 text-sm sm:text-base">{model}</h3>
                   <div className="flex items-center">
                     {/* Show typing indicator if this is a streaming response */}
                     {streamingResponses[model] && initialResponses && !initialResponses[model] && (
@@ -197,8 +197,8 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
                 </button>
                 
                 {expandedInitialResponses[model] && (
-                  <div className="p-4 pt-0 border-t border-gray-200">
-                    <p className="text-gray-700 whitespace-pre-wrap">{response}</p>
+                  <div className="p-3 sm:p-4 pt-0 border-t border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{response}</p>
                   </div>
                 )}
               </div>
@@ -209,23 +209,23 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
 
       {/* Debate Rounds */}
       {debates.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Debate Rounds</h2>
-          <div className="space-y-4">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Debate Rounds</h2>
+          <div className="space-y-3 sm:space-y-4">
             {debates.map((round, roundIndex) => (
               <div key={roundIndex} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => toggleRound(roundIndex)}
-                  className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 focus:outline-none"
+                  className="w-full flex justify-between items-center p-3 sm:p-4 text-left hover:bg-gray-50 focus:outline-none touch-manipulation"
                 >
-                  <h3 className="font-medium text-gray-800">Round {roundIndex + 1}</h3>
+                  <h3 className="font-medium text-gray-800 text-sm sm:text-base">Round {roundIndex + 1}</h3>
                   <div className="flex items-center">
-                    <div className="mr-3 font-medium text-blue-600">
+                    <div className="mr-2 sm:mr-3 font-medium text-blue-600 text-sm sm:text-base">
                       {getCurrentResponses(round)}/{getTotalModels()} responded
                     </div>
-                    <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
+                    <div className="w-16 sm:w-24 bg-gray-200 rounded-full h-2 sm:h-2.5 mr-2">
                       <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
+                        className="bg-blue-600 h-2 sm:h-2.5 rounded-full" 
                         style={{ width: `${(getCurrentResponses(round) / Math.max(1, getTotalModels())) * 100}%` }}
                       ></div>
                     </div>
@@ -236,29 +236,26 @@ export const DebateArea: React.FC<DebateAreaProps> = ({
                 </button>
                 
                 {expandedRounds[roundIndex] && (
-                  <div className="p-4 pt-0 border-t border-gray-200 space-y-3">
-                    {Object.entries(round).map(([model, response]) => {
-                      const responseKey = `${roundIndex}-${model}`;
-                      return (
-                        <div key={model} className="border border-gray-100 rounded-md overflow-hidden">
-                          <button
-                            onClick={() => toggleResponse(roundIndex, model)}
-                            className="w-full flex justify-between items-center p-2 text-left hover:bg-gray-50 focus:outline-none"
-                          >
-                            <h4 className="font-medium text-gray-700">{model}</h4>
-                            <span className="text-gray-500">
-                              {expandedResponses[responseKey] ? '▼' : '▶'}
-                            </span>
-                          </button>
-                          
-                          {expandedResponses[responseKey] && (
-                            <div className="p-3 pt-0 border-t border-gray-200">
-                              <p className="text-gray-700 whitespace-pre-wrap">{response}</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div className="p-3 sm:p-4 pt-0 border-t border-gray-200">
+                    {Object.entries(round).map(([model, response]) => (
+                      <div key={model} className="mb-3 sm:mb-4 last:mb-0">
+                        <button
+                          onClick={() => toggleResponse(roundIndex, model)}
+                          className="w-full flex justify-between items-center text-left hover:bg-gray-50 focus:outline-none touch-manipulation"
+                        >
+                          <h4 className="font-medium text-gray-800 text-sm sm:text-base">{model}</h4>
+                          <span className="text-gray-500">
+                            {expandedResponses[`${roundIndex}-${model}`] ? '▼' : '▶'}
+                          </span>
+                        </button>
+                        
+                        {expandedResponses[`${roundIndex}-${model}`] && (
+                          <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                            <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{response}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
