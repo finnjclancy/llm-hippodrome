@@ -5,7 +5,6 @@ import { ModelSelector } from '@/components/ModelSelector'
 import { DebateArea } from '@/components/DebateArea'
 import { PromptInput } from '@/components/PromptInput'
 import { Model, MODEL_GROUPS } from '@/types/models'
-import WelcomePopup from '@/components/WelcomePopup'
 import ApiKeyInput from '@/components/ApiKeyInput'
 
 export default function Home() {
@@ -15,7 +14,6 @@ export default function Home() {
   const [debates, setDebates] = useState<Array<Record<string, string>>>([])
   const [finalAnswer, setFinalAnswer] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const [openRouterKey, setOpenRouterKey] = useState('')
   
   // Track response progress
@@ -37,16 +35,6 @@ export default function Home() {
 
   // Add streamingResponses state
   const [streamingResponses, setStreamingResponses] = useState<Record<string, string> | null>(null)
-
-  // Check if the welcome popup should be shown
-  useEffect(() => {
-    // Always show the popup on every page load
-    setShowWelcomePopup(true)
-  }, [])
-  
-  const closeWelcomePopup = () => {
-    setShowWelcomePopup(false)
-  }
 
   // Update the response progress whenever initialResponses changes
   useEffect(() => {
@@ -319,8 +307,6 @@ export default function Home() {
 
   return (
     <div className="space-y-4 sm:space-y-8 py-4 sm:py-6 px-4 sm:px-6">
-      {showWelcomePopup && <WelcomePopup onClose={closeWelcomePopup} />}
-      
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-2 sm:mb-3">LLM Hippodrome</h1>
       <p className="text-center text-gray-600 text-sm sm:text-base mb-4 sm:mb-6">
         Watch AI models debate and come to a shared conclusion
